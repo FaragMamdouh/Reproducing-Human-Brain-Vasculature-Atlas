@@ -4,7 +4,7 @@ workflow {
     // Define inputs
     seurat_object_path = file(params.seurat_object)
     
-    // Step 1: Prepare metadata and counts using the R script
+    // Step 1: Prepare metadata and counts using the inline R function
     prepare_output = prepareSeurat(seurat_object_path)
     
     // Step 2: Run CellphoneDB statistical analysis and plots using the bash script
@@ -20,7 +20,32 @@ process prepareSeurat {
 
     script:
     """
-    Rscript prepare_seurat.R --seurat_object_path $seurat_object_path --metadata_output metadata.txt --counts_output counts.txt
+    Rscript -e '
+    prepare <- function(seurat_object_path, metadata_output = "metadata.txt", counts_output = "counts.txt") {
+        # Load libraries
+        library(Seurat)
+        library(data.table)
+
+        # Load the Seurat object
+        seurat_obj <- readRDS(file = seurat_object_path)
+
+        # Extract metadata and modify as required
+        metadata <- as.data.frame(as.matrix(seurat_obj@meta.data))
+        metadata$Patient <- NULL
+        colnames(metadata) <- NULL
+        write.table(metadata, file = metadata_output, quote = FALSE, col.names = FALSE, row.names = TRUE, sep = "\\t")
+
+        # Extract counts matrix
+        counts <- as.data.frame(as.matrix(seurat_obj@assays[["RNA"]]@data))
+        write.table(counts, file = counts_output, quote = FALSE, col.names = TRUE, row.names = TRUE, sep = "\\t")
+
+        # Print message to indicate files are ready for CellphoneDB
+        message(paste("Metadata and counts matrices have been saved for CellphoneDB analysis as", metadata_output, "and", counts_output))
+    }
+
+    # Run the function
+    prepare("$seurat_object_path", "metadata.txt", "counts.txt")
+    '
     """
 }
 
