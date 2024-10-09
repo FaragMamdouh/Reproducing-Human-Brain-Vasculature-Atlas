@@ -1,0 +1,41 @@
+nextflow.enable.dsl=2
+
+workflow {
+    // Define inputs
+    seurat_object_path = file(params.seurat_object)
+    
+    // Step 1: Prepare metadata and counts using the R script
+    prepare_output = prepareSeurat(seurat_object_path)
+    
+    // Step 2: Run CellphoneDB statistical analysis and plots using the bash script
+    runCellphoneDB(prepare_output.metadata, prepare_output.counts)
+}
+
+process prepareSeurat {
+    input:
+    file seurat_object_path
+
+    output:
+    file 'metadata.txt', file 'counts.txt' into prepared_files
+
+    script:
+    """
+    Rscript prepare_seurat.R --seurat_object_path $seurat_object_path --metadata_output metadata.txt --counts_output counts.txt
+    """
+}
+
+process runCellphoneDB {
+    input:
+    file 'metadata.txt', file 'counts.txt'
+
+    output:
+    file 'out/*'
+
+    script:
+    """
+    cellphonedb method statistical_analysis metadata.txt counts.txt --counts-data=gene_name
+    cellphonedb plot heatmap_plot metadata.txt
+    cellphonedb plot dot_plot
+    cellphonedb plot dot_plot --columns in/columns.txt
+    """
+}
