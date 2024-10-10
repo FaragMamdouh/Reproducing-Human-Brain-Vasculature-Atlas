@@ -1,6 +1,5 @@
 # Single-Cell Atlas of Human Brain Vasculature Across Development, Adulthood, and Disease
-## Link to the Original Paper:
-# Single-cell atlas of the human brain vasculature across development, adulthood and disease, Nature
+Link to the Original Paper:
 https://www.nature.com/articles/s41586-024-07493-y
 
 ## Google Drive Link to Figures: 
